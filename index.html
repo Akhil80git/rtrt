@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interview Flow - Multiple Images Support</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: #f0f4fa;
+      color: #1a1e2b;
+      overflow:hidden;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* top navigation */
+    .topnav {
+      position:fixed; top:0; left:0; right:0; height:56px;
+      background: linear-gradient(145deg, #5f2b6e, #2b4f8c);
+      border-bottom:1px solid #7a56a0;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 1rem; box-shadow:0 4px 14px rgba(35, 20, 60, 0.35); z-index:100;
+    }
+    .topnav .categories {
+      display:flex; gap:0.4rem; overflow-x:auto; padding:0.2rem 0;
+      flex:1;
+    }
+    .topnav button {
+      padding:0.4rem 1.2rem; font-size:0.85rem; font-weight:600;
+      color: #f0dcff; background: rgba(255,255,255,0.08); border:none; border-radius:40px;
+      cursor:pointer; white-space:nowrap; backdrop-filter:blur(6px);
+      transition:0.12s; border:1px solid rgba(255,255,255,0.15);
+    }
+    .topnav button:hover { background: rgba(220,180,255,0.3); color:white; }
+    .topnav button.active { 
+      background: linear-gradient(125deg, #c667e0, #7a5dc9); 
+      color:white; box-shadow:0 4px 12px #5a3a9e; border-color:#e5baff;
+    }
+    .nav-actions {
+      display:flex;
+      margin-left:0.8rem;
+    }
+    .nav-icon-btn {
+      width:32px; height:32px; font-size:1.3rem;
+      background:rgba(255,255,255,0.15); border-radius:50%; color:#f0dcff;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; border:1px solid #c27ee6; backdrop-filter:blur(6px);
+      transition:0.1s;
+    }
+    .nav-icon-btn:hover { background:#a65fd4; color:white; transform:scale(1.08); border-color:white; }
+    
+    /* sidebar */
+    .sidebar {
+      position:fixed; top:56px; left:0; width:80px; height:calc(100vh - 56px);
+      background: #2a1f3c;
+      border-right:1px solid #68558b;
+      display:flex; flex-direction:column;
+      box-shadow:4px 0 18px rgba(20, 10, 30, 0.4);
+    }
+    .sidebar-top {
+      flex:1;
+      overflow-y:auto;
+      padding:0.8rem 0.2rem;
+      text-align:center;
+    }
+    .sidebar-top h4 {
+      font-size:0.7rem; color: #dbbfff; margin:0.5rem 0 0.6rem;
+      font-weight:800; text-transform:uppercase; letter-spacing:0.8px;
+      background:rgba(170, 130, 230, 0.2); padding:0.3rem 0; border-radius:16px;
+    }
+    .sidebar-top button {
+      width:100%; padding:0.4rem 0.1rem; margin:0.2rem 0;
+      background: #382b50; border:none; border-radius:12px;
+      font-size:0.65rem; font-weight:500; text-align:center; word-break:break-word;
+      cursor:pointer; transition:0.1s; line-height:1.2; color: #e4d0ff; border:1px solid #6c4f96;
+    }
+    .sidebar-top button:hover { background: #54407c; color:white; border-color:#dbb5ff; transform:translateY(-1px); }
+    .sidebar-top button.active { 
+      background: linear-gradient(145deg, #b268e0, #7346b0); 
+      color:white; font-weight:700; border-color:#f0d0ff; box-shadow:0 4px 10px #5b3a86;
+    }
+    .sidebar-bottom {
+      padding:0.6rem 0.2rem;
+      border-top:1px solid #68558b;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      gap:0.4rem;
+    }
+    .sidebar-icon-btn {
+      width:36px; height:36px; margin:0 auto;
+      background: #382b50; border-radius:50%; color: #e4d0ff;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; border:1px solid #6c4f96; font-size:1.3rem;
+      transition:0.1s;
+    }
+    .sidebar-icon-btn:hover { background: #54407c; color:white; border-color:#dbb5ff; transform:scale(1.1); }
+    
+    /* content */
+    .content {
+      margin-left:80px; margin-top:56px; 
+      padding:1.5rem 5px 5rem 5px;
+      height:calc(100vh - 56px); overflow-y:auto; 
+      background: #f8f6ff;
+    }
+
+    .content h2 { 
+      font-size:2rem; font-weight:720; margin:0 0 1.5rem 0; 
+      background:linear-gradient(148deg, #4a2f7c, #7e4fa3); 
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text; border-left:6px solid #9f67cf; padding-left:1rem;
+      letter-spacing:-0.01em;
+    }
+
+    /* Q&A blocks with multiple image support */
+    .qa-block {
+      margin-bottom:1.5rem;
+      padding:0.2rem 0 0.2rem 0.6rem;
+      border-left:3px solid #b072db;
+    }
+    .qa-block .question {
+      font-weight:700; font-size:1.3rem; margin-bottom:0.2rem;
+      color: #1f2645; letter-spacing:-0.01rem;
+    }
+    .qa-block .question span {
+      color: #8f5fc7; font-weight:800; margin-right:0.5rem;
+    }
+    .qa-block .answer {
+      line-height:1.5; color: #262d42; white-space:pre-line; font-weight:400;
+      padding-left:0.2rem;
+      margin-bottom:0.5rem;
+    }
+    .qa-block .answer span {
+      color: #a050a0; font-weight:700; margin-right:0.5rem;
+    }
+    
+    /* Multiple images container - images ek ke baad ek fit */
+    .qa-images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin: 0.8rem 0 0.5rem 0;
+      padding: 0.5rem;
+      background: #f0e6ff;
+      border-radius: 12px;
+      border: 1px dashed #b072db;
+    }
+    
+    .qa-images img {
+      max-width: 100%;
+      max-height: 180px; /* Default height */
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+      cursor: pointer;
+      flex: 0 1 auto;
+    }
+    
+    .qa-images img:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(90, 45, 130, 0.3);
+    }
+    
+    /* Diagram category special handling - images larger */
+    .diagram-mode .qa-images img {
+      max-height: 300px; /* Diagram ke liye zyada height */
+      width: 100%;
+    }
+    
+    /* Image gallery style for many images */
+    .qa-images.many-images img {
+      max-height: 120px; /* Jab bahut saari images ho to chhoti ho jayengi */
+    }
+    
+    .image-info {
+      font-size:0.75rem;
+      color:#6b4f96;
+      margin-top:0.2rem;
+      width: 100%;
+    }
+
+    /* fixed edit button */
+    .fixed-edit-btn {
+      position:fixed; bottom:20px; right:20px;
+      width:46px; height:46px; border-radius:50%;
+      background:linear-gradient(142deg, #b45bd4, #6b3f9e);
+      color:white; font-size:1.7rem; font-weight:300;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 12px 24px rgba(70, 30, 100, 0.6), 0 0 0 4px rgba(255, 255, 255, 0.4);
+      cursor:pointer; border:none; transition:0.1s;
+      z-index:150;
+    }
+    .fixed-edit-btn:hover { transform:scale(1.15) rotate(4deg); background:#c971e6; }
+
+    /* popup styles */
+    .popup {
+      display:none; position:fixed; inset:0;
+      background:rgba(20, 12, 36, 0.75); backdrop-filter:blur(8px);
+      justify-content:center; align-items:center; z-index:300;
+    }
+    .popup-content {
+      background: white; width:90%; max-width:700px; border-radius:40px;
+      padding:1.8rem 2rem; max-height:90vh; overflow-y:auto;
+      box-shadow:0 40px 60px #1f1335; border:1px solid #cbb2e9;
+    }
+    .popup-content.wide { max-width:900px; }
+    .popup label { 
+      display:block; margin:0.6rem 0 0.2rem; font-weight:600; 
+      color: #492e6d; font-size:0.95rem;
+    }
+    .popup input, .popup textarea, .popup select {
+      width:100%; padding:0.8rem 1.2rem; margin-bottom:0.8rem;
+      border:2px solid #dcc9f5; border-radius:24px; font-size:0.95rem;
+      background: #fdfbff;
+    }
+    .popup input:focus, .popup textarea:focus, .popup select:focus { border-color:#b07fe0; outline:none; }
+    .popup button {
+      width:100%; padding:0.9rem; background:linear-gradient(145deg, #9855b9, #633e92);
+      color:white; border:none; border-radius:40px; font-weight:700; font-size:0.95rem;
+      cursor:pointer; box-shadow:0 8px 18px #b89bdd; margin-bottom:0.4rem;
+    }
+    .popup button:hover { filter:brightness(1.1); }
+    .popup button.secondary { background:linear-gradient(145deg, #4f5b66, #2d3a4a); }
+    .close { float:right; font-size:2.4rem; cursor:pointer; color: #a279c6; line-height:0.8; }
+    .close:hover { color:#5b3892; }
+    .popup hr { margin:1.5rem 0; border:2px solid #eddaff; }
+    
+    /* Multiple image upload preview area */
+    .image-preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: #f5edff;
+      border-radius: 16px;
+      min-height: 80px;
+      border: 2px dashed #c29bf0;
+    }
+    
+    .preview-image-item {
+      position: relative;
+      display: inline-block;
+      max-width: 100px;
+      max-height: 80px;
+    }
+    
+    .preview-image-item img {
+      max-width: 100px;
+      max-height: 80px;
+      border-radius: 8px;
+      border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .preview-image-item .remove-preview {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 22px;
+      height: 22px;
+      background: #d9554a;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border: 2px solid white;
+    }
+    
+    .preview-image-item .remove-preview:hover {
+      background: #b33c32;
+    }
+    
+    .add-more-images {
+      background: #e4d5ff;
+      border: 2px dashed #9b72cf;
+      border-radius: 16px;
+      padding: 0.8rem;
+      text-align: center;
+      color: #633e92;
+      cursor: pointer;
+      margin: 0.5rem 0;
+    }
+    
+    .add-more-images:hover {
+      background: #d4c0fc;
+    }
+
+    .topic-list {
+      margin:1.2rem 0;
+    }
+    .topic-item {
+      display:flex; align-items:center; gap:0.8rem;
+      background: #f2ebff; border-radius:40px; padding:0.6rem 1.2rem;
+      margin-bottom:0.6rem; border:1px solid #d7baf5;
+    }
+    .topic-item .topic-name {
+      flex:1; font-weight:600; color: #382b50; font-size:1rem;
+    }
+    .topic-actions {
+      display:flex; gap:0.4rem;
+    }
+    .topic-actions button {
+      width:auto; padding:0.4rem 1rem; margin:0; font-size:0.8rem;
+      background: #382b50; color: #e4d0ff; border:1px solid #6c4f96;
+    }
+    .topic-actions button.edit-topic { background:#8f5fc7; color:white; }
+    .topic-actions button.delete-topic { background:#d9554a; color:white; }
+
+    .edit-item {
+      background: #f2ebff; border-radius:28px; padding:1.2rem; margin-bottom:1.5rem;
+      border:1px solid #d7baf5;
+    }
+    .edit-item input, .edit-item textarea { background: white; border-radius:18px; }
+    .edit-item-actions { display:flex; gap:0.8rem; justify-content:flex-end; margin-top:0.6rem; }
+    .edit-item-actions button { padding:0.4rem 1.2rem; width:auto; background:#d9554a; border-radius:40px; }
+    .edit-item-actions button.save-edit { background:#1f9f7a; }
+    
+    /* Image gallery in edit mode */
+    .edit-images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: #e9d9ff;
+      border-radius: 16px;
+    }
+    
+    .edit-image-item {
+      position: relative;
+      max-width: 80px;
+    }
+    
+    .edit-image-item img {
+      max-width: 80px;
+      max-height: 60px;
+      border-radius: 6px;
+    }
+    
+    .remove-edit-image {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      background: #d9554a;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+      border: 2px solid white;
+    }
+  </style>
+</head>
+<body id="mainBody">
+
+<!-- topnav with settings icon -->
+<div class="topnav" id="topnav">
+  <div class="categories" id="categoryContainer">
+    <button data-category="html" class="active" onclick="loadCategory('html')">HTML</button>
+    <button data-category="css" onclick="loadCategory('css')">CSS</button>
+    <button data-category="js" onclick="loadCategory('js')">JS</button>
+    <button data-category="image" onclick="loadCategory('image')">IMAGE</button>
+    <button data-category="diagram" onclick="loadCategory('diagram')">DIAGRAM</button>
+  </div>
+  <div class="nav-actions">
+    <div class="nav-icon-btn" onclick="openCategoryPopup()" title="Manage Categories">⚙️</div>
+  </div>
+</div>
+
+<!-- sidebar with theme icon at top and action icons at bottom -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="sidebar-icon-btn" onclick="openThemePopup()" title="Customize Theme" style="margin-bottom:0.8rem;" id="themeIcon">🎨</div>
+    <h4 id="categoryHeader">HTML</h4>
+    <div id="sidebarButtons"></div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="sidebar-icon-btn" onclick="openPopup(true)" title="Add Question to current topic">➕</div>
+    <div class="sidebar-icon-btn" onclick="openTopicManagePopup()" title="Edit/Delete Topics">✎</div>
+  </div>
+</div>
+
+<!-- main content -->
+<div class="content" id="content"></div>
+
+<!-- bottom edit button -->
+<div class="fixed-edit-btn" onclick="openGlobalEdit()" title="Edit questions in current topic">✎</div>
+
+<!-- Theme Customizer Popup -->
+<div class="popup" id="themePopup">
+  <div class="popup-content">
+    <span class="close" onclick="closeThemePopup()">×</span>
+    <h3 style="color: #492e6d;">🎨 Theme Customizer</h3>
+    
+    <div class="theme-option">
+      <label>Theme Mode:</label>
+      <select id="themeMode" onchange="applyThemeMode()">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+
+    <div class="theme-option">
+      <label>Font Family:</label>
+      <select id="fontFamily" onchange="applyFont()">
+        <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">System Default</option>
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'Times New Roman', serif">Times New Roman</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="'Georgia', serif">Georgia</option>
+        <option value="'Verdana', sans-serif">Verdana</option>
+      </select>
+    </div>
+
+    <div class="theme-option">
+      <label>Font Size:</label>
+      <select id="fontSize" onchange="applyFont()">
+        <option value="100%">Normal</option>
+        <option value="110%">Large</option>
+        <option value="120%">Larger</option>
+        <option value="90%">Small</option>
+        <option value="80%">Smaller</option>
+      </select>
+    </div>
+
+    <hr>
+
+    <h4 style="color: #492e6d;">Manual Colors</h4>
+    
+    <div class="theme-option">
+      <label>Topnav Color:</label>
+      <input type="color" id="topnavColor" value="#5f2b6e" onchange="applyManualColor()">
+    </div>
+
+    <div class="theme-option">
+      <label>Sidebar Color:</label>
+      <input type="color" id="sidebarColor" value="#2a1f3c" onchange="applyManualColor()">
+    </div>
+
+    <div class="theme-option">
+      <label>Background Color:</label>
+      <input type="color" id="bgColor" value="#f0f4fa" onchange="applyManualColor()">
+    </div>
+
+    <div class="theme-option">
+      <label>Text Color:</label>
+      <input type="color" id="textColor" value="#1a1e2b" onchange="applyManualColor()">
+    </div>
+
+    <button onclick="resetTheme()" style="background:linear-gradient(145deg, #4f5b66, #2d3a4a);">↺ Reset to Default</button>
+    <button onclick="closeThemePopup()">Close</button>
+  </div>
+</div>
+
+<!-- popup for adding question with MULTIPLE image support -->
+<div class="popup" id="popup">
+  <div class="popup-content">
+    <span class="close" onclick="closePopup()">×</span>
+    <h3 id="popupTitle">➕ Add Question with Multiple Images</h3>
+    <div id="topicSection">
+      <label>Topic / Short Name</label>
+      <input type="text" id="topicName" placeholder="e.g. closures, flexbox" maxlength="30">
+    </div>
+    <label>Question</label>
+    <textarea id="question" placeholder="Enter question..."></textarea>
+    <label>Answer</label>
+    <textarea id="answer" placeholder="Enter answer..."></textarea>
+    
+    <!-- Multiple image upload section -->
+    <label>Images (you can select multiple at once)</label>
+    <input type="file" id="imageUpload" accept="image/*" multiple onchange="previewMultipleImages()">
+    
+    <!-- Preview area for selected images -->
+    <div class="image-preview-container" id="imagePreviewContainer"></div>
+    
+    <!-- Hidden input to store image data array -->
+    <input type="hidden" id="imageDataArray" value="">
+    
+    <button onclick="saveItem()">💾 Save Question with Images</button>
+    <hr>
+    <label>📥 Import JSON</label>
+    <textarea id="jsonPaste" rows="4" placeholder='[{"topicName":"useEffect","question":"...?","answer":"...","images":["data:image...", "url"]}]'></textarea>
+    <button onclick="importJSON()">⬆️ Import</button>
+  </div>
+</div>
+
+<!-- popup for managing categories -->
+<div class="popup" id="categoryPopup">
+  <div class="popup-content wide">
+    <span class="close" onclick="closeCategoryPopup()">×</span>
+    <h3 style="color: #492e6d;">📁 Manage Categories</h3>
+    
+    <div class="topic-list" id="categoryList"></div>
+    
+    <hr>
+    <h4 style="color: #492e6d;">Add New Category</h4>
+    <input type="text" id="newCategoryName" placeholder="e.g. angular, vue, python" maxlength="30">
+    <button onclick="addNewCategory()">➕ Add Category</button>
+    <button class="secondary" onclick="closeCategoryPopup()">Close</button>
+  </div>
+</div>
+
+<!-- popup for managing topics -->
+<div class="popup" id="topicManagePopup">
+  <div class="popup-content wide">
+    <span class="close" onclick="closeTopicManagePopup()">×</span>
+    <h3 style="color: #492e6d;">📋 Manage Topics in <span id="currentCategoryName"></span></h3>
+    
+    <div class="topic-list" id="topicList"></div>
+    
+    <hr>
+    <h4 style="color: #492e6d;">Add New Topic</h4>
+    <input type="text" id="newTopicName" placeholder="e.g. closures, hooks" maxlength="30">
+    <button onclick="addNewTopic()">➕ Add Topic</button>
+    <button class="secondary" onclick="closeTopicManagePopup()">Close</button>
+  </div>
+</div>
+
+<!-- global edit popup (for questions) with multiple image support -->
+<div class="popup" id="editPopup">
+  <div class="popup-content wide">
+    <span class="close" onclick="closeEditPopup()">×</span>
+    <h3 style="color: #492e6d;">✏️ Edit Questions in <span id="editTopicName"></span></h3>
+    <div id="editItemsContainer"></div>
+    <button onclick="saveAllEdits()" style="background:linear-gradient(145deg, #1f9f7a, #157a5d);">✔️ Done / Save Changes</button>
+  </div>
+</div>
+
+<script>
+  // Default categories with image and diagram
+  const defaultCategories = ['html','css','js','image','diagram'];
+  let categories = [...defaultCategories];
+  let data = {};
+  let currentCategory = 'html';
+  let currentTopic = null;
+  let isQuickMode = false;
+  
+  // Store temporary image data for new question
+  let tempImages = [];
+
+  const STORAGE_KEY = 'interviewFlowData';
+  const CATEGORIES_KEY = 'interviewFlowCategories';
+  const THEME_KEY = 'interviewFlowTheme';
+
+  // Load data from localStorage
+  function loadDataFromStorage() {
+    // Load categories
+    const storedCats = localStorage.getItem(CATEGORIES_KEY);
+    if (storedCats) {
+      try {
+        categories = JSON.parse(storedCats);
+      } catch (e) {
+        categories = [...defaultCategories];
+      }
+    } else {
+      categories = [...defaultCategories];
+    }
+
+    // Load data
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        data = JSON.parse(stored);
+        categories.forEach(cat => { if (!data[cat]) data[cat] = {}; });
+      } catch (e) {
+        initDefaultData();
+      }
+    } else {
+      initDefaultData();
+    }
+    
+    // Load theme
+    loadTheme();
+    
+    saveDataToStorage();
+    renderCategoryButtons();
+  }
+
+  function initDefaultData() {
+    data = {
+      html: {
+        "doctype": [{q:"What is DOCTYPE?", a:"Declares document type & version to browser", images: ["https://via.placeholder.com/400x150/8f5fc7/ffffff?text=DOCTYPE+Example"]}],
+        "link-tag": [{q:"What is <link> tag used for?", a:"To link external CSS, favicon, etc."}],
+        "meta-tags": [{q:"Common meta tags?", a:"charset, viewport, description, keywords", images: ["https://via.placeholder.com/500x100/4a2f7c/ffffff?text=Meta+Tags+Example", "https://via.placeholder.com/300x200/6b4f96/ffffff?text=More+Meta"]}],
+        "semantic": [{q:"Semantic elements?", a:"header, nav, main, article, section, footer"}],
+        "forms": [{q:"What is <form> method GET vs POST?", a:"GET: url params, POST: body (secure)"}],
+      },
+      css: {
+        "flexbox": [{q:"Center with flex?", a:"display:flex; justify-content:center; align-items:center;", images: ["https://via.placeholder.com/300x150/8f5fc7/ffffff?text=Flex+Center"]}],
+        "grid": [{q:"CSS Grid basic?", a:"display:grid; grid-template-columns: repeat(3, 1fr);"}],
+        "position": [{q:"position: absolute vs relative?", a:"relative: to itself; absolute: to nearest positioned ancestor"}],
+      },
+      js: {
+        "closures": [{q:"What is closure?", a:"Function + access to outer scope variables"}],
+        "promises": [{q:"Promise states?", a:"pending, fulfilled, rejected"}],
+        "async-await": [{q:"Async/await vs .then?", a:"Syntactic sugar over promises"}],
+      },
+      image: {
+        "sample-images": [{q:"Sample image question?", a:"This shows how multiple images appear", images: ["https://via.placeholder.com/400x200/8f5fc7/ffffff?text=Image+1", "https://via.placeholder.com/400x200/4a2f7c/ffffff?text=Image+2", "https://via.placeholder.com/400x200/9f67cf/ffffff?text=Image+3"]}],
+        "screenshots": [{q:"How to take screenshot?", a:"Press Print Screen or use Snipping Tool", images: ["https://via.placeholder.com/500x150/4a2f7c/ffffff?text=Screenshot+Example"]}]
+      },
+      diagram: {
+        "flowchart": [{q:"Draw a flowchart for login process?", a:"Start → Enter Credentials → Validate → Success/Failure", images: ["https://via.placeholder.com/800x300/2a1f3c/ffffff?text=Login+Flowchart+Diagram", "https://via.placeholder.com/600x250/4a2f7c/ffffff?text=Alternative+Flow"]}],
+        "architecture": [{q:"System architecture diagram?", a:"Client → Load Balancer → Web Server → Database", images: ["https://via.placeholder.com/1000x250/4a2f7c/ffffff?text=3-Tier+Architecture"]}]
+      }
+    };
+    categories.forEach(cat => { if (!data[cat]) data[cat] = {}; });
+  }
+
+  function saveDataToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  }
+
+  // Theme functions
+  function loadTheme() {
+    const theme = localStorage.getItem(THEME_KEY);
+    if (theme) {
+      const themeData = JSON.parse(theme);
+      
+      if (themeData.darkMode) {
+        document.body.style.backgroundColor = '#1a1425';
+        document.body.style.color = '#e0d0ff';
+        document.getElementById('topnav').style.background = 'linear-gradient(145deg, #2d1a3a, #1a2c4a)';
+        document.getElementById('sidebar').style.background = '#1a1225';
+        document.querySelector('.content').style.background = '#1f192b';
+        document.getElementById('themeMode').value = 'dark';
+      }
+      
+      if (themeData.fontFamily) {
+        document.body.style.fontFamily = themeData.fontFamily;
+        document.getElementById('fontFamily').value = themeData.fontFamily;
+      }
+      if (themeData.fontSize) {
+        document.body.style.fontSize = themeData.fontSize;
+        document.getElementById('fontSize').value = themeData.fontSize;
+      }
+      
+      if (themeData.topnavColor) {
+        document.getElementById('topnav').style.background = `linear-gradient(145deg, ${themeData.topnavColor}, #2b4f8c)`;
+        document.getElementById('topnavColor').value = themeData.topnavColor;
+      }
+      if (themeData.sidebarColor) {
+        document.getElementById('sidebar').style.background = themeData.sidebarColor;
+        document.getElementById('sidebarColor').value = themeData.sidebarColor;
+      }
+      if (themeData.bgColor) {
+        document.body.style.backgroundColor = themeData.bgColor;
+        document.querySelector('.content').style.background = themeData.bgColor;
+        document.getElementById('bgColor').value = themeData.bgColor;
+      }
+      if (themeData.textColor) {
+        document.body.style.color = themeData.textColor;
+        document.getElementById('textColor').value = themeData.textColor;
+      }
+    }
+  }
+
+  function saveTheme() {
+    const themeData = {
+      darkMode: document.body.style.backgroundColor === 'rgb(26, 20, 37)' || document.body.style.backgroundColor === '#1a1425',
+      fontFamily: document.body.style.fontFamily,
+      fontSize: document.body.style.fontSize,
+      topnavColor: document.getElementById('topnavColor').value,
+      sidebarColor: document.getElementById('sidebarColor').value,
+      bgColor: document.getElementById('bgColor').value,
+      textColor: document.getElementById('textColor').value
+    };
+    localStorage.setItem(THEME_KEY, JSON.stringify(themeData));
+  }
+
+  function openThemePopup() {
+    document.getElementById('themePopup').style.display = 'flex';
+  }
+
+  function closeThemePopup() {
+    document.getElementById('themePopup').style.display = 'none';
+  }
+
+  function applyThemeMode() {
+    const mode = document.getElementById('themeMode').value;
+    if (mode === 'dark') {
+      document.body.style.backgroundColor = '#1a1425';
+      document.body.style.color = '#e0d0ff';
+      document.getElementById('topnav').style.background = 'linear-gradient(145deg, #2d1a3a, #1a2c4a)';
+      document.getElementById('sidebar').style.background = '#1a1225';
+      document.querySelector('.content').style.background = '#1f192b';
+    } else {
+      document.body.style.backgroundColor = '#f0f4fa';
+      document.body.style.color = '#1a1e2b';
+      document.getElementById('topnav').style.background = 'linear-gradient(145deg, #5f2b6e, #2b4f8c)';
+      document.getElementById('sidebar').style.background = '#2a1f3c';
+      document.querySelector('.content').style.background = '#f8f6ff';
+    }
+    saveTheme();
+  }
+
+  function applyFont() {
+    const fontFamily = document.getElementById('fontFamily').value;
+    const fontSize = document.getElementById('fontSize').value;
+    document.body.style.fontFamily = fontFamily;
+    document.body.style.fontSize = fontSize;
+    saveTheme();
+  }
+
+  function applyManualColor() {
+    const topnavColor = document.getElementById('topnavColor').value;
+    const sidebarColor = document.getElementById('sidebarColor').value;
+    const bgColor = document.getElementById('bgColor').value;
+    const textColor = document.getElementById('textColor').value;
+    
+    document.getElementById('topnav').style.background = `linear-gradient(145deg, ${topnavColor}, #2b4f8c)`;
+    document.getElementById('sidebar').style.background = sidebarColor;
+    document.body.style.backgroundColor = bgColor;
+    document.querySelector('.content').style.background = bgColor;
+    document.body.style.color = textColor;
+    
+    saveTheme();
+  }
+
+  function resetTheme() {
+    document.body.style.backgroundColor = '#f0f4fa';
+    document.body.style.color = '#1a1e2b';
+    document.body.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    document.body.style.fontSize = '100%';
+    
+    document.getElementById('topnav').style.background = 'linear-gradient(145deg, #5f2b6e, #2b4f8c)';
+    document.getElementById('sidebar').style.background = '#2a1f3c';
+    document.querySelector('.content').style.background = '#f8f6ff';
+    
+    document.getElementById('themeMode').value = 'light';
+    document.getElementById('fontFamily').value = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    document.getElementById('fontSize').value = '100%';
+    document.getElementById('topnavColor').value = '#5f2b6e';
+    document.getElementById('sidebarColor').value = '#2a1f3c';
+    document.getElementById('bgColor').value = '#f0f4fa';
+    document.getElementById('textColor').value = '#1a1e2b';
+    
+    localStorage.removeItem(THEME_KEY);
+  }
+
+  // Multiple image handling functions
+  function previewMultipleImages() {
+    const files = document.getElementById('imageUpload').files;
+    if (files.length > 0) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          tempImages.push(e.target.result);
+          displayImagePreviews();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+  
+  function displayImagePreviews() {
+    const container = document.getElementById('imagePreviewContainer');
+    let html = '';
+    
+    tempImages.forEach((imgData, index) => {
+      html += `
+        <div class="preview-image-item">
+          <img src="${imgData}" alt="Preview ${index+1}">
+          <span class="remove-preview" onclick="removeTempImage(${index})">×</span>
+        </div>
+      `;
+    });
+    
+    // Add note about number of images
+    if (tempImages.length > 0) {
+      html += `<div class="image-info">${tempImages.length} image(s) selected</div>`;
+    }
+    
+    container.innerHTML = html;
+    document.getElementById('imageDataArray').value = JSON.stringify(tempImages);
+  }
+  
+  function removeTempImage(index) {
+    tempImages.splice(index, 1);
+    displayImagePreviews();
+  }
+  
+  function clearTempImages() {
+    tempImages = [];
+    displayImagePreviews();
+    document.getElementById('imageUpload').value = '';
+  }
+
+  function renderCategoryButtons() {
+    const container = document.getElementById('categoryContainer');
+    container.innerHTML = '';
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.textContent = cat.toUpperCase();
+      btn.dataset.category = cat;
+      btn.onclick = () => loadCategory(cat);
+      if (cat === currentCategory) btn.classList.add('active');
+      container.appendChild(btn);
+    });
+  }
+
+  function loadCategory(cat) {
+    if (!categories.includes(cat)) {
+      categories.push(cat);
+      renderCategoryButtons();
+    }
+    currentCategory = cat;
+    currentTopic = null;
+    
+    // Update active class
+    document.querySelectorAll('#categoryContainer button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.category === cat);
+    });
+    
+    // Update category header
+    document.getElementById('categoryHeader').textContent = cat.toUpperCase();
+    
+    // Add/remove diagram mode class based on category
+    const content = document.getElementById('content');
+    if (cat === 'diagram') {
+      content.classList.add('diagram-mode');
+    } else {
+      content.classList.remove('diagram-mode');
+    }
+    
+    renderSidebar();
+    document.getElementById('content').innerHTML = `
+      <h2>${cat.toUpperCase()} Topics</h2>
+      <p style="color: #6b4f96; font-size:1.2rem; padding-left:0.8rem;">Select a topic from sidebar</p>
+    `;
+    saveDataToStorage();
+  }
+
+  function renderSidebar() {
+    const sidebar = document.getElementById('sidebarButtons');
+    sidebar.innerHTML = '';
+    const topics = Object.keys(data[currentCategory] || {}).sort();
+    if (topics.length === 0) {
+      sidebar.innerHTML += '<p style="color: #bba6d9; font-size:0.7rem; padding:0.5rem;">Empty</p>';
+      return;
+    }
+    topics.forEach(topic => {
+      const btn = document.createElement('button');
+      btn.textContent = topic;
+      btn.onclick = () => loadTopic(topic);
+      if (topic === currentTopic) btn.classList.add('active');
+      sidebar.appendChild(btn);
+    });
+  }
+
+  function loadTopic(topic) {
+    currentTopic = topic;
+    renderSidebar();
+
+    const cont = document.getElementById('content');
+    const items = data[currentCategory]?.[topic] || [];
+
+    let html = `<h2>${topic}</h2>`;
+    if (items.length === 0) {
+      html += '<p style="color: #6b4f96; font-size:1.2rem; padding-left:0.8rem;">📭 No questions yet. Click + to add.</p>';
+    } else {
+      items.forEach((item) => {
+        html += `<div class="qa-block">`;
+        html += `<div class="question"><span>Q:</span>${escapeHtml(item.q)}</div>`;
+        
+        // Add multiple images if exist
+        if (item.images && item.images.length > 0) {
+          const manyClass = item.images.length > 3 ? ' many-images' : '';
+          html += `<div class="qa-images${manyClass}">`;
+          item.images.forEach(imgSrc => {
+            html += `<img src="${imgSrc}" alt="Question image" onclick="window.open(this.src)" onerror="this.src='https://via.placeholder.com/400x100/cccccc/ffffff?text=Image+Error'">`;
+          });
+          html += `</div>`;
+        }
+        
+        // Add answer
+        html += `<div class="answer"><span>A:</span>${escapeHtml(item.a || '')}</div>`;
+        html += `</div>`;
+      });
+    }
+    cont.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]);
+  }
+
+  function openPopup(quick) {
+    isQuickMode = quick;
+    const popup = document.getElementById('popup');
+    const title = document.getElementById('popupTitle');
+    const topicSec = document.getElementById('topicSection');
+    if (quick && currentTopic) {
+      title.textContent = `Add to "${currentTopic}" (Multiple Images)`;
+      topicSec.style.display = 'none';
+    } else {
+      title.textContent = '➕ Add New Question with Multiple Images';
+      topicSec.style.display = 'block';
+      document.getElementById('topicName').value = '';
+    }
+    document.getElementById('question').value = '';
+    document.getElementById('answer').value = '';
+    document.getElementById('imageUpload').value = '';
+    clearTempImages();
+    popup.style.display = 'flex';
+  }
+
+  function closePopup() { document.getElementById('popup').style.display = 'none'; }
+  function closeEditPopup() { document.getElementById('editPopup').style.display = 'none'; }
+  function closeCategoryPopup() { document.getElementById('categoryPopup').style.display = 'none'; }
+  function closeTopicManagePopup() { document.getElementById('topicManagePopup').style.display = 'none'; }
+
+  function saveItem() {
+    let topic = isQuickMode ? currentTopic : document.getElementById('topicName').value.trim();
+    const q = document.getElementById('question').value.trim();
+    const a = document.getElementById('answer').value.trim();
+    
+    if (!topic) return alert('Topic name required');
+    if (!q) return alert('Question is required');
+    
+    if (!data[currentCategory][topic]) data[currentCategory][topic] = [];
+    
+    const newItem = {q, a};
+    
+    // Add multiple images if any
+    if (tempImages.length > 0) {
+      newItem.images = [...tempImages];
+    }
+    
+    data[currentCategory][topic].push(newItem);
+    saveDataToStorage();
+    closePopup();
+    clearTempImages();
+    renderSidebar();
+    if (currentTopic === topic) loadTopic(topic);
+    else if (!currentTopic) loadCategory(currentCategory);
+  }
+
+  function openCategoryPopup() {
+    const container = document.getElementById('categoryList');
+    let html = '';
+    categories.forEach(cat => {
+      html += `
+        <div class="topic-item">
+          <span class="topic-name">${cat}</span>
+          <div class="topic-actions">
+            <button class="edit-topic" onclick="renameCategory('${cat}')">Edit</button>
+            <button class="delete-topic" onclick="deleteCategory('${cat}')">Delete</button>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+    document.getElementById('categoryPopup').style.display = 'flex';
+  }
+
+  function addNewCategory() {
+    const newCat = document.getElementById('newCategoryName').value.trim().toLowerCase();
+    if (newCat) {
+      if (!categories.includes(newCat)) {
+        categories.push(newCat);
+        data[newCat] = {};
+        saveDataToStorage();
+        renderCategoryButtons();
+        document.getElementById('newCategoryName').value = '';
+        openCategoryPopup();
+      } else {
+        alert('Category already exists');
+      }
+    }
+  }
+
+  function renameCategory(oldName) {
+    const newName = prompt('Enter new name for category:', oldName);
+    if (newName && newName.trim() && newName.trim() !== oldName) {
+      const newCat = newName.trim().toLowerCase();
+      if (!categories.includes(newCat)) {
+        const index = categories.indexOf(oldName);
+        categories[index] = newCat;
+        data[newCat] = data[oldName];
+        delete data[oldName];
+        if (currentCategory === oldName) {
+          currentCategory = newCat;
+        }
+        saveDataToStorage();
+        renderCategoryButtons();
+        loadCategory(newCat);
+        openCategoryPopup();
+      } else {
+        alert('Category already exists');
+      }
+    }
+  }
+
+  function deleteCategory(cat) {
+    if (categories.length <= 1) {
+      alert('Cannot delete the last category');
+      return;
+    }
+    if (confirm(`Delete category "${cat}" and all its topics?`)) {
+      const index = categories.indexOf(cat);
+      categories.splice(index, 1);
+      delete data[cat];
+      if (currentCategory === cat) {
+        currentCategory = categories[0];
+      }
+      saveDataToStorage();
+      renderCategoryButtons();
+      loadCategory(currentCategory);
+      openCategoryPopup();
+    }
+  }
+
+  function openTopicManagePopup() {
+    document.getElementById('currentCategoryName').textContent = currentCategory;
+    const topics = Object.keys(data[currentCategory] || {}).sort();
+    const container = document.getElementById('topicList');
+    
+    if (topics.length === 0) {
+      container.innerHTML = '<p style="color: #6b4f96;">No topics yet. Add one below.</p>';
+    } else {
+      let html = '';
+      topics.forEach(topic => {
+        html += `
+          <div class="topic-item">
+            <span class="topic-name">${topic}</span>
+            <div class="topic-actions">
+              <button class="edit-topic" onclick="renameTopic('${topic}')">Edit</button>
+              <button class="delete-topic" onclick="deleteTopic('${topic}')">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+    
+    document.getElementById('topicManagePopup').style.display = 'flex';
+  }
+
+  function renameTopic(oldName) {
+    const newName = prompt('Enter new name for topic:', oldName);
+    if (newName && newName.trim() && newName.trim() !== oldName) {
+      const newTopic = newName.trim();
+      if (!data[currentCategory][newTopic]) {
+        data[currentCategory][newTopic] = data[currentCategory][oldName];
+        delete data[currentCategory][oldName];
+        if (currentTopic === oldName) {
+          currentTopic = newTopic;
+        }
+        saveDataToStorage();
+        renderSidebar();
+        if (currentTopic === newTopic) loadTopic(newTopic);
+        openTopicManagePopup();
+      } else {
+        alert('Topic already exists');
+      }
+    }
+  }
+
+  function deleteTopic(topic) {
+    if (confirm(`Delete topic "${topic}" and all its questions?`)) {
+      delete data[currentCategory][topic];
+      if (currentTopic === topic) {
+        currentTopic = null;
+      }
+      saveDataToStorage();
+      renderSidebar();
+      if (currentTopic) loadTopic(currentTopic);
+      else loadCategory(currentCategory);
+      openTopicManagePopup();
+    }
+  }
+
+  function addNewTopic() {
+    const newTopic = document.getElementById('newTopicName').value.trim();
+    if (newTopic) {
+      if (!data[currentCategory][newTopic]) {
+        data[currentCategory][newTopic] = [];
+        saveDataToStorage();
+        document.getElementById('newTopicName').value = '';
+        renderSidebar();
+        openTopicManagePopup();
+      } else {
+        alert('Topic already exists');
+      }
+    }
+  }
+
+  function openGlobalEdit() {
+    if (!currentTopic) { alert('Select a topic first'); return; }
+    const items = data[currentCategory]?.[currentTopic] || [];
+    const container = document.getElementById('editItemsContainer');
+    document.getElementById('editTopicName').innerText = currentTopic;
+    
+    let html = '';
+    if (items.length === 0) {
+      html += '<p style="color: #6b4f96;">No questions yet. Add one below.</p>';
+    } else {
+      items.forEach((item, idx) => {
+        html += `
+          <div class="edit-item">
+            <label>Question ${idx+1}</label>
+            <input type="text" id="edit_q_${idx}" value="${escapeHtml(item.q)}" placeholder="Question">
+            <textarea id="edit_a_${idx}" placeholder="Answer">${escapeHtml(item.a)}</textarea>
+        `;
+        
+        // Show existing images
+        if (item.images && item.images.length > 0) {
+          html += `<div class="edit-images" id="edit_images_${idx}">`;
+          item.images.forEach((img, imgIdx) => {
+            html += `
+              <div class="edit-image-item">
+                <img src="${img}" alt="Image">
+                <span class="remove-edit-image" onclick="removeEditImage(${idx}, ${imgIdx})">×</span>
+              </div>
+            `;
+          });
+          html += `</div>`;
+          html += `<button onclick="addMoreImagesToEdit(${idx})" style="background:#8f5fc7; width:auto; padding:0.3rem 1rem; margin:0.5rem 0;">➕ Add More Images</button>`;
+        } else {
+          html += `<button onclick="addMoreImagesToEdit(${idx})" style="background:#8f5fc7; width:auto; padding:0.3rem 1rem; margin:0.5rem 0;">➕ Add Images</button>`;
+        }
+        
+        html += `
+            <div class="edit-item-actions">
+              <button class="save-edit" onclick="saveEditItem(${idx})">💾 Save</button>
+              <button onclick="deleteEditItem(${idx})">🗑 Delete</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    // Add new question form
+    html += `
+      <hr>
+      <h4 style="color: #6b4f96;">➕ Add new question to this topic</h4>
+      <div class="edit-item">
+        <label>New Question</label>
+        <input type="text" id="new_q" placeholder="Question">
+        <textarea id="new_a" placeholder="Answer"></textarea>
+        <label>Images (select multiple)</label>
+        <input type="file" id="new_images" accept="image/*" multiple onchange="previewNewImages()">
+        <div class="image-preview-container" id="newImagesPreview"></div>
+        <input type="hidden" id="new_images_data" value="">
+        <button onclick="addNewFromEdit()" style="background:linear-gradient(145deg, #9855b9, #633e92);">➕ Add to topic</button>
+      </div>
+    `;
+    container.innerHTML = html;
+    document.getElementById('editPopup').style.display = 'flex';
+  }
+
+  // Store temporary images for new question in edit mode
+  let tempNewImages = [];
+
+  function previewNewImages() {
+    const files = document.getElementById('new_images').files;
+    if (files.length > 0) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          tempNewImages.push(e.target.result);
+          displayNewImagePreviews();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+  
+  function displayNewImagePreviews() {
+    const container = document.getElementById('newImagesPreview');
+    let html = '';
+    
+    tempNewImages.forEach((imgData, index) => {
+      html += `
+        <div class="preview-image-item">
+          <img src="${imgData}" alt="Preview ${index+1}">
+          <span class="remove-preview" onclick="removeTempNewImage(${index})">×</span>
+        </div>
+      `;
+    });
+    
+    if (tempNewImages.length > 0) {
+      html += `<div class="image-info">${tempNewImages.length} new image(s) selected</div>`;
+    }
+    
+    container.innerHTML = html;
+    document.getElementById('new_images_data').value = JSON.stringify(tempNewImages);
+  }
+  
+  function removeTempNewImage(index) {
+    tempNewImages.splice(index, 1);
+    displayNewImagePreviews();
+  }
+
+  // For adding more images to existing question
+  function addMoreImagesToEdit(itemIdx) {
+    // Create a hidden file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = function(e) {
+      const files = e.target.files;
+      if (files.length > 0) {
+        Array.from(files).forEach(file => {
+          const reader = new FileReader();
+          reader.onload = function(ev) {
+            // Add to the item's images
+            if (!data[currentCategory][currentTopic][itemIdx].images) {
+              data[currentCategory][currentTopic][itemIdx].images = [];
+            }
+            data[currentCategory][currentTopic][itemIdx].images.push(ev.target.result);
+            saveDataToStorage();
+            // Refresh the edit view
+            openGlobalEdit();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    };
+    input.click();
+  }
+
+  function removeEditImage(itemIdx, imgIdx) {
+    if (confirm('Remove this image?')) {
+      data[currentCategory][currentTopic][itemIdx].images.splice(imgIdx, 1);
+      // If no images left, remove the images property
+      if (data[currentCategory][currentTopic][itemIdx].images.length === 0) {
+        delete data[currentCategory][currentTopic][itemIdx].images;
+      }
+      saveDataToStorage();
+      openGlobalEdit();
+      loadTopic(currentTopic);
+    }
+  }
+
+  function saveEditItem(idx) {
+    const newQ = document.getElementById(`edit_q_${idx}`).value.trim();
+    const newA = document.getElementById(`edit_a_${idx}`).value.trim();
+    if (!newQ) return alert('Question cannot be empty');
+    
+    // Preserve existing images
+    const existingImages = data[currentCategory][currentTopic][idx].images || [];
+    
+    data[currentCategory][currentTopic][idx] = { q: newQ, a: newA };
+    if (existingImages.length > 0) {
+      data[currentCategory][currentTopic][idx].images = existingImages;
+    }
+    
+    saveDataToStorage();
+    loadTopic(currentTopic);
+    openGlobalEdit();
+  }
+
+  function deleteEditItem(idx) {
+    if (confirm('Delete this question?')) {
+      data[currentCategory][currentTopic].splice(idx, 1);
+      if (data[currentCategory][currentTopic].length === 0) {
+        delete data[currentCategory][currentTopic];
+        closeEditPopup();
+        loadCategory(currentCategory);
+      } else {
+        openGlobalEdit();
+        loadTopic(currentTopic);
+      }
+      saveDataToStorage();
+    }
+  }
+
+  function addNewFromEdit() {
+    const newQ = document.getElementById('new_q').value.trim();
+    const newA = document.getElementById('new_a').value.trim();
+    
+    if (!newQ) return alert('Question is required');
+    
+    const newItem = {q: newQ, a: newA};
+    if (tempNewImages.length > 0) {
+      newItem.images = [...tempNewImages];
+    }
+    
+    data[currentCategory][currentTopic].push(newItem);
+    saveDataToStorage();
+    
+    // Clear temporary data
+    tempNewImages = [];
+    document.getElementById('new_q').value = '';
+    document.getElementById('new_a').value = '';
+    document.getElementById('new_images').value = '';
+    document.getElementById('newImagesPreview').innerHTML = '';
+    document.getElementById('new_images_data').value = '';
+    
+    openGlobalEdit();
+    loadTopic(currentTopic);
+  }
+
+  function saveAllEdits() { closeEditPopup(); loadTopic(currentTopic); }
+
+  function importJSON() {
+    const jsonStr = document.getElementById('jsonPaste').value.trim();
+    if (!jsonStr) { alert('Paste JSON first'); return; }
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!Array.isArray(parsed)) throw new Error('Not an array');
+      parsed.forEach(item => {
+        if (!item.topicName || !item.question) throw new Error('Invalid format');
+        const topic = item.topicName.trim();
+        if (!data[currentCategory][topic]) data[currentCategory][topic] = [];
+        
+        const newItem = {q: item.question, a: item.answer || ''};
+        if (item.images && Array.isArray(item.images)) {
+          newItem.images = item.images;
+        } else if (item.image) {
+          // Backward compatibility
+          newItem.images = [item.image];
+        }
+        
+        data[currentCategory][topic].push(newItem);
+      });
+      saveDataToStorage();
+      alert('Import successful');
+      closePopup();
+      renderSidebar();
+      if (currentTopic && data[currentCategory][currentTopic]) loadTopic(currentTopic);
+      else loadCategory(currentCategory);
+    } catch (e) { alert('Invalid JSON: ' + e.message); }
+  }
+
+  // Initialize
+  window.addEventListener('load', () => { 
+    loadDataFromStorage(); 
+    loadCategory('html'); 
+  });
+</script>
+</body>
+</html>
